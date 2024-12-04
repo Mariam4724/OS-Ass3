@@ -31,7 +31,7 @@ public class SJFScheduler {
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         mainPanel.setBackground(Color.LIGHT_GRAY);
 
-        // Input Panel
+        
         JPanel inputPanel = new JPanel(new FlowLayout());
         inputPanel.setBackground(Color.DARK_GRAY);
 
@@ -47,12 +47,12 @@ public class SJFScheduler {
         inputPanel.add(processCountField);
         inputPanel.add(generateButton);
 
-        // Table Panel
+        
         model = new DefaultTableModel(new String[]{"Process ID", "Arrival Time", "Burst Time"}, 0);
         table = new JTable(model);
         JScrollPane tableScroll = new JScrollPane(table);
 
-        // Run Scheduler Button
+        
         JButton runButton = new JButton("Run Scheduler");
         runButton.setBackground(Color.WHITE);
         runButton.addActionListener(e -> runScheduler());
@@ -68,7 +68,7 @@ public class SJFScheduler {
     private void generateProcessTable() {
         try {
             int processCount = Integer.parseInt(processCountField.getText());
-            model.setRowCount(0); // Clear the table
+            model.setRowCount(0); 
             for (int i = 0; i < processCount; i++) {
                 model.addRow(new Object[]{i + 1, "", ""});
             }
@@ -80,7 +80,7 @@ public class SJFScheduler {
     private void runScheduler() {
         List<Process> processes = new ArrayList<>();
 
-        // Validate and collect input
+        
         for (int i = 0; i < model.getRowCount(); i++) {
             try {
                 int id = Integer.parseInt(model.getValueAt(i, 0).toString());
@@ -93,10 +93,10 @@ public class SJFScheduler {
             }
         }
 
-        // Run SJF scheduling
+        
         sjfScheduling(processes);
 
-        // Display results
+        
         DefaultTableModel resultModel = new DefaultTableModel(
                 new String[]{"Process ID", "Arrival Time", "Burst Time", "Completion Time", "Turnaround Time", "Waiting Time"}, 0);
         for (Process p : processes) {
@@ -132,7 +132,7 @@ public class SJFScheduler {
         boolean[] isCompleted = new boolean[n];
 
         while (completed < n) {
-            // Get processes that have arrived but not completed
+            
             List<Process> readyQueue = new ArrayList<>();
             for (int i = 0; i < n; i++) {
                 if (!isCompleted[i] && processes.get(i).arrivalTime <= time) {
@@ -140,30 +140,30 @@ public class SJFScheduler {
                 }
             }
 
-            // Apply aging to increase priorities of waiting processes
+           
             for (Process p : readyQueue) {
                 p.priority++;
             }
 
-            // Select the process with the shortest burst time (and highest priority if tied)
+           
             readyQueue.sort(Comparator.comparingInt((Process p) -> p.burstTime)
                     .thenComparing(p -> -p.priority));
 
             if (!readyQueue.isEmpty()) {
                 Process currentProcess = readyQueue.get(0);
 
-                // Execute the process
-                ganttChart.add("P" + currentProcess.id); // Add to Gantt chart
+                
+                ganttChart.add("P" + currentProcess.id); 
                 time += currentProcess.burstTime;
                 currentProcess.completionTime = time;
                 currentProcess.turnaroundTime = currentProcess.completionTime - currentProcess.arrivalTime;
                 currentProcess.waitingTime = currentProcess.turnaroundTime - currentProcess.burstTime;
 
-                // Mark as completed
+                
                 isCompleted[currentProcess.id - 1] = true;
                 completed++;
             } else {
-                // If no process is ready, move the time forward
+                
                 time++;
             }
         }
