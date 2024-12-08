@@ -1,0 +1,78 @@
+import java.util.*;
+
+class Process {
+    String name;
+    int arrivalTime;
+    int burstTime;
+    int priority;
+
+    public Process(String name, int arrivalTime, int burstTime, int priority) {
+        this.name = name;
+        this.arrivalTime = arrivalTime;
+        this.burstTime = burstTime;
+        this.priority = priority;
+    }
+}
+class Priority {
+    List<Process> processes;
+    int contextSwitchTime;
+
+    public Priority(int contextSwitchTime) {
+        this.processes = new ArrayList<>();
+        this.contextSwitchTime = contextSwitchTime;
+    }
+
+    public void addProcess(Process p) {
+        processes.add(p);
+    }
+
+        public static void main(String[] args) {
+            Scanner scanner = new Scanner(System.in);
+            System.out.println("Enter number of processes: ");
+            int numProcesses = scanner.nextInt();
+            System.out.println("Enter Round Robin Time Quantum: ");
+            int TimeQuantum = scanner.nextInt();
+            System.out.println("Enter Context Switching Time: ");
+            int contextSwitchTime = scanner.nextInt();
+            List<Process> processes = new ArrayList<>();
+
+            for (int i = 0; i < numProcesses; i++) {
+                System.out.println("Enter Process Name: ");
+                String name = scanner.next();
+                System.out.println("Enter Process Arrival Time: ");
+                int arrivalTime = scanner.nextInt();
+                System.out.println("Enter Process Burst Time: ");
+                int burstTime = scanner.nextInt();
+                System.out.println("Enter Process Priority: ");
+                int priority = scanner.nextInt();
+
+                processes.add(new Process(name, arrivalTime, burstTime, priority));
+            }
+
+            processes.sort(Comparator.comparingInt((Process p) -> p.priority).thenComparingInt(p -> p.arrivalTime));
+
+            int currentTime = 0;
+            int totalWaitingTime = 0;
+            int totalTurnaroundTime = 0;
+
+            System.out.println("\nProcess execution order:");
+            for (Process p : processes) {
+                if (currentTime < p.arrivalTime) {
+                    currentTime = p.arrivalTime;
+                }
+                int waitingTime = currentTime - p.arrivalTime;
+                int turnaroundTime = waitingTime + p.burstTime;
+                totalWaitingTime += waitingTime;
+                totalTurnaroundTime += turnaroundTime;
+                currentTime += p.burstTime;
+
+                System.out.println(p.name + " ");
+                System.out.println("Waiting Time: " + waitingTime);
+                System.out.println("Turnaround Time: " + turnaroundTime);
+            }
+
+            System.out.println("\nAverage Waiting Time: " + (double) totalWaitingTime / numProcesses);
+            System.out.println("Average Turnaround Time: " + (double) totalTurnaroundTime / numProcesses);
+        }
+    }
+
