@@ -1,4 +1,4 @@
-package org.os;
+package project;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -27,7 +27,7 @@ public class SRTFScheduler {
     private JTable table;
     private DefaultTableModel model;
     private JTextField processCountField;
-    private JTextField contextSwitchField; // Field for context switching time
+    private JTextField contextSwitchField; 
     private List<String> ganttChart;
     private List<Process> processes;
 
@@ -47,7 +47,6 @@ public class SRTFScheduler {
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         mainPanel.setBackground(Color.LIGHT_GRAY);
 
-        // Input panel
         JPanel inputPanel = new JPanel(new FlowLayout());
         inputPanel.setBackground(Color.DARK_GRAY);
 
@@ -69,12 +68,10 @@ public class SRTFScheduler {
         inputPanel.add(contextSwitchField);
         inputPanel.add(generateButton);
 
-        // Table panel
         model = new DefaultTableModel(new String[]{"Process Name", "Color", "Arrival Time", "Burst Time"}, 0);
         table = new JTable(model);
         JScrollPane tableScroll = new JScrollPane(table);
 
-        // Run Scheduler Button
         JButton runButton = new JButton("Run Scheduler");
         runButton.setBackground(Color.WHITE);
         runButton.addActionListener(e -> runScheduler());
@@ -102,7 +99,6 @@ public class SRTFScheduler {
     private void runScheduler() {
         processes.clear();
 
-        // Validate and collect input
         for (int i = 0; i < model.getRowCount(); i++) {
             try {
                 String name = model.getValueAt(i, 0).toString();
@@ -116,7 +112,6 @@ public class SRTFScheduler {
             }
         }
 
-        // Get context switching time
         int contextSwitchTime;
         try {
             contextSwitchTime = Integer.parseInt(contextSwitchField.getText());
@@ -125,10 +120,8 @@ public class SRTFScheduler {
             return;
         }
 
-        // Run SRTF scheduling
-        srtfScheduling(processes, contextSwitchTime, 20);
+        srtfScheduling(processes, contextSwitchTime, 10);
 
-        // Display results
         DefaultTableModel resultModel = new DefaultTableModel(
                 new String[]{"Process Name", "Arrival Time", "Burst Time", "Waiting Time", "Turnaround Time"}, 0);
         double totalWaitingTime = 0;
@@ -172,8 +165,7 @@ public class SRTFScheduler {
         JPanel ganttPanel = new JPanel();
         ganttPanel.setLayout(new FlowLayout());
 
-        // Define a scaling factor for burst time to pixel width
-        int scaleFactor = 10; // Adjust this value as needed for better visualization
+        int scaleFactor = 10; 
 
         for (String processName : ganttChart) {
             Process process = processes.stream()
@@ -200,54 +192,57 @@ public class SRTFScheduler {
         JOptionPane.showMessageDialog(frame, resultPanel, "Scheduling Results", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    private void srtfScheduling(List<Process> processes, int contextSwitchTime, int agingThreshold) {
+    private void srtfScheduling(List<Process> processes, int contextSwitchTime, int waitingThreshold) {
         int currentTime = 0;
         int completedProcesses = 0;
         int n = processes.size();
         boolean[] isCompleted = new boolean[n];
-        boolean firstProcessExecuted = false; // Flag to skip context switch for the first process
+        boolean firstProcessExecuted = false; 
         ganttChart.clear();
         String lastExecutedProcess = "";
 
         while (completedProcesses < n) {
-            // Aging: Adjust remaining times for processes waiting longer than the threshold
-            for (int i = 0; i < n; i++) {
-                if (!isCompleted[i] && processes.get(i).arrivalTime <= currentTime &&
-                        (currentTime - processes.get(i).arrivalTime > agingThreshold)) {
-                    processes.get(i).remainingTime--; // Boost priority by artificially reducing remaining time
-                }
-            }
-
-            // Find the process with the shortest remaining time
             int idx = -1;
             int minRemainingTime = Integer.MAX_VALUE;
 
             for (int i = 0; i < n; i++) {
-                if (processes.get(i).arrivalTime <= currentTime && !isCompleted[i] && processes.get(i).remainingTime < minRemainingTime) {
-                    minRemainingTime = processes.get(i).remainingTime;
-                    idx = i;
+                Process process = processes.get(i);
+
+                if (process.arrivalTime <= currentTime && !isCompleted[i]) {
+                    int waitingTime = currentTime - process.arrivalTime - (process.burstTime - process.remainingTime);
+                    if (waitingTime > waitingThreshold) {
+                        idx = i;
+                        break;
+                    }
+
+                    if (process.remainingTime < minRemainingTime) {
+                        minRemainingTime = process.remainingTime;
+                        idx = i;
+                    }
                 }
             }
 
             if (idx != -1) {
-                if (!lastExecutedProcess.equals(processes.get(idx).name)) {
+                Process currentProcess = processes.get(idx);
+
+                if (!lastExecutedProcess.equals(currentProcess.name)) {
                     if (!firstProcessExecuted) {
-                        // Skip context switch for the first process
                         firstProcessExecuted = true;
                     } else if (!lastExecutedProcess.isEmpty()) {
-                        currentTime += contextSwitchTime; // Apply context switch time for subsequent processes
+                        currentTime += contextSwitchTime; 
                         ganttChart.add("Context Switch");
                     }
-                    ganttChart.add(processes.get(idx).name);
-                    lastExecutedProcess = processes.get(idx).name;
+                    ganttChart.add(currentProcess.name);
+                    lastExecutedProcess = currentProcess.name;
                 }
-                processes.get(idx).remainingTime--;
+
+                currentProcess.remainingTime--;
                 currentTime++;
 
-                if (processes.get(idx).remainingTime == 0) {
-                    processes.get(idx).completionTime = currentTime;
-                    processes.get(idx).turnaroundTime = processes.get(idx).completionTime - processes.get(idx).arrivalTime;
-                    processes.get(idx).waitingTime = processes.get(idx).turnaroundTime - processes.get(idx).burstTime;
+                if (currentProcess.remainingTime == 0) {
+                    currentProcess.completionTime = currentTime;
+                    currentProcess.turnaroundTime = currentProcess.completionTime - currentProcess.arrivalTime;
+                    currentProcess.waitingTime = currentProcess.turnaroundTime - currentProcess.burstTime;
                     isCompleted[idx] = true;
                     completedProcesses++;
                 }
@@ -257,6 +252,7 @@ public class SRTFScheduler {
             }
         }
     }
+
 
 
 }
