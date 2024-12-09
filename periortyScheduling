@@ -1,78 +1,173 @@
-import java.util.*;
+package org.os;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 class Process {
     String name;
     int arrivalTime;
     int burstTime;
     int priority;
+    int id;
+    int remainingTime;
+    int completionTime;
+    int waitingTime;
+    int turnaroundTime;
+    int startTime;
 
-    public Process(String name, int arrivalTime, int burstTime, int priority) {
-        this.name = name;
+    public Process (int id, int arrivalTime, int burstTime) {
+        this.id = id;
         this.arrivalTime = arrivalTime;
         this.burstTime = burstTime;
-        this.priority = priority;
     }
 }
-class Priority {
+
+public class PriorityScheduler {
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(PrioritySchedulerGui::new);
+    }
+}
+
+class PrioritySchedulerGui {
+    private JFrame frame;
+    private JTable table;
+    private DefaultTableModel model;
+    private JTextField processCountField;
+    private List<String> ganttChart;
     List<Process> processes;
-    int contextSwitchTime;
 
-    public Priority(int contextSwitchTime) {
-        this.processes = new ArrayList<>();
-        this.contextSwitchTime = contextSwitchTime;
+    public PrioritySchedulerGui() {
+        ganttChart = new ArrayList<>();
+        frame = new JFrame("Priority Scheduler");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(900, 600);
+        frame.setLocationRelativeTo(null);
+
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        mainPanel.setBackground(Color.LIGHT_GRAY);
+
+        JPanel inputPanel = new JPanel(new FlowLayout());
+        inputPanel.setBackground(Color.DARK_GRAY);
+
+        JLabel label = new JLabel("Enter Number of Processes: ");
+        label.setForeground(Color.WHITE);
+        processCountField = new JTextField(5);
+
+        JButton generateButton = new JButton("Generate Table");
+        generateButton.setBackground(Color.WHITE);
+        generateButton.addActionListener(e -> generateProcessTable());
+
+        inputPanel.add(label);
+        inputPanel.add(processCountField);
+        inputPanel.add(generateButton);
+
+        model = new DefaultTableModel(new String[]{"Process ID", "Arrival Time", "Burst Time"}, 0);
+        table = new JTable(model);
+        JScrollPane tableScroll = new JScrollPane(table);
+
+        JButton runButton = new JButton("Run Scheduler");
+        runButton.setBackground(Color.WHITE);
+        runButton.addActionListener(e -> runScheduler());
+
+        mainPanel.add(inputPanel, BorderLayout.NORTH);
+        mainPanel.add(tableScroll, BorderLayout.CENTER);
+        mainPanel.add(runButton, BorderLayout.SOUTH);
+
+        frame.add(mainPanel);
+        frame.setVisible(true);
     }
 
-    public void addProcess(Process p) {
-        processes.add(p);
-    }
-
-        public static void main(String[] args) {
-            Scanner scanner = new Scanner(System.in);
-            System.out.println("Enter number of processes: ");
-            int numProcesses = scanner.nextInt();
-            System.out.println("Enter Round Robin Time Quantum: ");
-            int TimeQuantum = scanner.nextInt();
-            System.out.println("Enter Context Switching Time: ");
-            int contextSwitchTime = scanner.nextInt();
-            List<Process> processes = new ArrayList<>();
-
-            for (int i = 0; i < numProcesses; i++) {
-                System.out.println("Enter Process Name: ");
-                String name = scanner.next();
-                System.out.println("Enter Process Arrival Time: ");
-                int arrivalTime = scanner.nextInt();
-                System.out.println("Enter Process Burst Time: ");
-                int burstTime = scanner.nextInt();
-                System.out.println("Enter Process Priority: ");
-                int priority = scanner.nextInt();
-
-                processes.add(new Process(name, arrivalTime, burstTime, priority));
+    private void generateProcessTable() {
+        try {
+            int processCount = Integer.parseInt(processCountField.getText());
+            model.setRowCount(0);
+            for (int i = 0; i < processCount; i++) {
+                model.addRow(new Object[]{i + 1, "", ""});
             }
-
-            processes.sort(Comparator.comparingInt((Process p) -> p.priority).thenComparingInt(p -> p.arrivalTime));
-
-            int currentTime = 0;
-            int totalWaitingTime = 0;
-            int totalTurnaroundTime = 0;
-
-            System.out.println("\nProcess execution order:");
-            for (Process p : processes) {
-                if (currentTime < p.arrivalTime) {
-                    currentTime = p.arrivalTime;
-                }
-                int waitingTime = currentTime - p.arrivalTime;
-                int turnaroundTime = waitingTime + p.burstTime;
-                totalWaitingTime += waitingTime;
-                totalTurnaroundTime += turnaroundTime;
-                currentTime += p.burstTime;
-
-                System.out.println(p.name + " ");
-                System.out.println("Waiting Time: " + waitingTime);
-                System.out.println("Turnaround Time: " + turnaroundTime);
-            }
-
-            System.out.println("\nAverage Waiting Time: " + (double) totalWaitingTime / numProcesses);
-            System.out.println("Average Turnaround Time: " + (double) totalTurnaroundTime / numProcesses);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(frame, "Please enter a valid number of processes.");
         }
     }
 
+    private void runScheduler() {
+        processes = new ArrayList<>();
+
+        for (int i = 0; i < model.getRowCount(); i++) {
+            try {
+                int id = Integer.parseInt(model.getValueAt(i, 0).toString());
+                int arrivalTime = Integer.parseInt(model.getValueAt(i, 1).toString());
+                int burstTime = Integer.parseInt(model.getValueAt(i, 2).toString());
+                processes.add(new Process(id, arrivalTime, burstTime));
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(frame, "Please fill all fields correctly for Process " + (i + 1));
+                return;
+            }
+        }
+        priorityScheduling(processes);
+
+        DefaultTableModel resultModel = new DefaultTableModel(
+                new String[]{"Process ID", "Arrival Time", "Burst Time", "Completion Time", "Turnaround Time", "Waiting Time"}, 0);
+        for (Process p : processes) {
+            resultModel.addRow(new Object[]{
+                    p.id, p.arrivalTime, p.burstTime, p.completionTime, p.turnaroundTime, p.waitingTime
+            });
+        }
+
+        JTable resultTable = new JTable(resultModel);
+        JScrollPane resultScroll = new JScrollPane(resultTable);
+
+        JPanel resultPanel = new JPanel(new BorderLayout(10, 10));
+        resultPanel.add(resultScroll, BorderLayout.CENTER);
+
+        JLabel ganttLabel = new JLabel("Gantt Chart:");
+        ganttLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        ganttLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        JLabel ganttOutput = new JLabel(String.join(" | ", ganttChart));
+        ganttOutput.setFont(new Font("Arial", Font.PLAIN, 14));
+        ganttOutput.setHorizontalAlignment(SwingConstants.CENTER);
+
+        resultPanel.add(ganttLabel, BorderLayout.NORTH);
+        resultPanel.add(ganttOutput, BorderLayout.SOUTH);
+
+        JOptionPane.showMessageDialog(frame, resultPanel, "Scheduling Results", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void priorityScheduling(List<Process> processes) {
+        int time = 0;
+        int completed = 0;
+        int n = processes.size();
+        boolean[] isCompleted = new boolean[n];
+
+        while (completed < n) {
+            List<Process> readyQueue = new ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                if (!isCompleted[i] && processes.get(i).arrivalTime <= time) {
+                    readyQueue.add(processes.get(i));
+                }
+            }
+
+            readyQueue.sort(Comparator.comparingInt((Process p) -> p.burstTime)
+                    .thenComparing(p -> -p.priority));
+
+            if (!readyQueue.isEmpty()) {
+                Process currentProcess = readyQueue.get(0);
+
+                ganttChart.add("P" + currentProcess.id);
+                time += currentProcess.burstTime;
+                currentProcess.completionTime = time;
+                currentProcess.turnaroundTime = currentProcess.completionTime - currentProcess.arrivalTime;
+                currentProcess.waitingTime = currentProcess.turnaroundTime - currentProcess.burstTime;
+
+                isCompleted[currentProcess.id - 1] = true;
+                completed++;
+            } else {
+                time++;
+            }
+        }
+    }
+}
