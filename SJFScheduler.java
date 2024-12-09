@@ -1,4 +1,4 @@
-package org.os;
+package project;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -171,29 +171,33 @@ public class SJFScheduler {
 
         JOptionPane.showMessageDialog(frame, resultPanel, "Scheduling Results", JOptionPane.INFORMATION_MESSAGE);
     }
-
     private void sjfScheduling(List<Process> processes, int contextSwitchTime) {
         int time = 0;
         int completed = 0;
         int n = processes.size();
         boolean[] isCompleted = new boolean[n];
-        int[] waitTime = new int[n]; // Track waiting time for aging mechanism
-        boolean isFirstProcess = true; // Flag to ignore context switching time for the first process
+        boolean isFirstProcess = true; // Flag to ignore context-switching time for the first process
 
         while (completed < n) {
             List<Process> readyQueue = new ArrayList<>();
+            Process priorityProcess = null;
+
             for (int i = 0; i < n; i++) {
                 if (!isCompleted[i] && processes.get(i).arrivalTime <= time) {
-                    readyQueue.add(processes.get(i));
-                    waitTime[i]++; // Increment wait time for processes in the ready queue
+                    Process p = processes.get(i);
+                    readyQueue.add(p);
+
+                    int waitingTime = time - p.arrivalTime;
+                    if (waitingTime > 10 && (priorityProcess == null || waitingTime > (time - priorityProcess.arrivalTime))) {
+                        priorityProcess = p;
+                    }
                 }
             }
 
-            // Apply aging: Reduce the effective burst time of waiting processes
-            for (Process p : readyQueue) {
-                int index = processes.indexOf(p);
-                // Reduce effective burst time slightly based on wait time
-                p.burstTime = Math.max(1, p.burstTime - (waitTime[index] / 5)); // Adjust divisor for sensitivity
+            // If a priority process with waiting time > 20 is found, execute it directly
+            if (priorityProcess != null) {
+                readyQueue.clear();
+                readyQueue.add(priorityProcess);
             }
 
             // Sort readyQueue by burst time
@@ -206,7 +210,7 @@ public class SJFScheduler {
                 // Simulate execution of the process
                 if (isFirstProcess) {
                     time += currentProcess.burstTime; // Ignore context-switching time for the first process
-                    isFirstProcess = false; // Set flag to false after first process execution
+                    isFirstProcess = false;
                 } else {
                     time += currentProcess.burstTime + contextSwitchTime; // Include context-switching time
                 }
@@ -217,14 +221,12 @@ public class SJFScheduler {
 
                 isCompleted[currentProcess.id - 1] = true;
                 completed++;
-
-                // Reset wait times for all processes since time has moved forward
-                waitTime = new int[n];
             } else {
                 time++; // No process is ready; increment time
             }
         }
     }
+
 
 
 
