@@ -6,7 +6,6 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
-
 class Process1 {
     String name;
     String color;
@@ -58,7 +57,6 @@ public class PriorityScheduler {
         JLabel countLabel = new JLabel("Enter Number of Processes: ");
         countLabel.setForeground(Color.WHITE);
         processCountField = new JTextField(5);
-
 
         JLabel contextSwitchLabel = new JLabel("Enter Context Switching Time: ");
         contextSwitchLabel.setForeground(Color.WHITE);
@@ -172,10 +170,11 @@ public class PriorityScheduler {
                 time = current.arrivalTime;
             }
             current.startTime = time;
-            time += current.burstTime + contextSwitch;
+            time += current.burstTime;
             current.endTime = time;
             current.turnaroundTime = current.endTime - current.arrivalTime;
             current.waitingTime = current.startTime - current.arrivalTime;
+            time += contextSwitch; // Add context switch time after each process
         }
     }
 
@@ -201,12 +200,15 @@ public class PriorityScheduler {
                     g.setColor(Color.BLACK);
                     g.drawRect(x, y, width, height);
                     g.drawString(p.name + " (" + p.startTime + "-" + p.endTime + ")", x + 5, y - 5);
-                    x += width;
+                    x += width + 2 * widthUnit; // Add space for context switch in the chart
                 }
 
+                double averageWaitingTime = processes.stream().mapToInt(p -> p.waitingTime).average().orElse(0);
+                double averageTurnaroundTime = processes.stream().mapToInt(p -> p.turnaroundTime).average().orElse(0);
+
                 g.setColor(Color.BLACK);
-                g.drawString("Average Waiting Time: " + processes.stream().mapToInt(p -> p.waitingTime).average().orElse(0), 50, y + 100);
-                g.drawString("Average Turnaround Time: " + processes.stream().mapToInt(p -> p.turnaroundTime).average().orElse(0), 50, y + 120);
+                g.drawString("Average Waiting Time: " + averageWaitingTime, 50, y + 100);
+                g.drawString("Average Turnaround Time: " + averageTurnaroundTime, 50, y + 120);
             }
         };
 
