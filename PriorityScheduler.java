@@ -1,12 +1,10 @@
-package project;
-
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel; // استيراد DefaultTableModel
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
 
-class Process1 {
+class Process {
     String name;
     String color;
     int arrivalTime;
@@ -18,7 +16,7 @@ class Process1 {
     int waitingTime;
     int turnaroundTime;
 
-    public Process1(String name, String color, int arrivalTime, int burstTime, int priority) {
+    public Process(String name, String color, int arrivalTime, int burstTime, int priority) {
         this.name = name;
         this.color = color;
         this.arrivalTime = arrivalTime;
@@ -33,7 +31,7 @@ public class PriorityScheduler {
     private JTable table;
     private DefaultTableModel model;
     private JTextField processCountField, contextSwitchField;
-    private List<Process1> processes;
+    private List<Process> processes;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(PriorityScheduler::new);
@@ -149,11 +147,11 @@ public class PriorityScheduler {
                 int burstTime = Integer.parseInt(burstTimeStr);
                 int priority = Integer.parseInt(priorityStr);
 
-                processes.add(new Process1(name, color, arrivalTime, burstTime, priority));
+                processes.add(new Process(name, color, arrivalTime, burstTime, priority));
             }
 
             nonPreemptivePriorityScheduling(contextSwitch);
-            drawGanttChart();
+            drawGanttChart(contextSwitch);
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(frame, "Please ensure that Arrival Time, Burst Time, and Priority are valid integers.");
         } catch (Exception e) {
@@ -162,10 +160,10 @@ public class PriorityScheduler {
     }
 
     private void nonPreemptivePriorityScheduling(int contextSwitch) {
-        processes.sort(Comparator.comparingInt((Process1 p) -> p.priority).thenComparingInt(p -> p.arrivalTime));
+        processes.sort(Comparator.comparingInt((Process p) -> p.arrivalTime).thenComparingInt(p -> p.priority));
         int time = 0;
 
-        for (Process1 current : processes) {
+        for (Process current : processes) {
             if (current.arrivalTime > time) {
                 time = current.arrivalTime;
             }
@@ -174,11 +172,11 @@ public class PriorityScheduler {
             current.endTime = time;
             current.turnaroundTime = current.endTime - current.arrivalTime;
             current.waitingTime = current.startTime - current.arrivalTime;
-            time += contextSwitch; // Add context switch time after each process
+            time += contextSwitch;
         }
     }
 
-    private void drawGanttChart() {
+    private void drawGanttChart(int contextSwitch) {
         JFrame ganttFrame = new JFrame("Gantt Chart");
         ganttFrame.setSize(1000, 400);
         ganttFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -193,14 +191,14 @@ public class PriorityScheduler {
                 int height = 50;
                 int widthUnit = 20;
 
-                for (Process1 p : processes) {
+                for (Process p : processes) {
                     int width = (p.burstTime * widthUnit);
                     g.setColor(Color.decode(p.color));
                     g.fillRect(x, y, width, height);
                     g.setColor(Color.BLACK);
                     g.drawRect(x, y, width, height);
                     g.drawString(p.name + " (" + p.startTime + "-" + p.endTime + ")", x + 5, y - 5);
-                    x += width + 2 * widthUnit; // Add space for context switch in the chart
+                    x += width + (contextSwitch * widthUnit);
                 }
 
                 double averageWaitingTime = processes.stream().mapToInt(p -> p.waitingTime).average().orElse(0);
